@@ -1,0 +1,20 @@
+cd  server
+ 
+node -e "const db = require('./db/customers'); console.log(db.createCustomer('+254712345', 'Test User'))"
+(Call createCustomer with a test phone and name)
+
+server/
+  index.js          ✅ — starts everything up
+  db/
+    index.js        ✅ — opens database, creates tables
+    customers.js    ✅ — find and create customers
+    deliveries.js   ✅ — all delivery queries
+    messages.js     ✅ — audit log queries
+    conversations.js✅ — conversation state queries
+  services/
+    whatsapp.js     ✅ — sends messages to Meta
+    bot.js          ✅ — state machine brain
+    delivery.js     ✅ — operator actions
+  routes/
+    webhook.js      ✅ — receives WhatsApp messages
+    api.js          ✅ — serves the dashboard
