@@ -1,0 +1,95 @@
+Demo Checklist
+
+1. Reset the database
+npm run db:reset
+Why: Shows the project works from a fresh state with one command.
+
+2. Start the server
+npm run dev
+Why: Confirms clean startup with no errors.
+
+3.Try accessing rides without a token
+curl http://localhost:3000/api/rides
+Expected: {"error":"No token provided"}
+Why: Proves every route is protected. Nobody can access data without logging in first.
+
+4. Log in as admin
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@jetlink.com","password":"password123"}'
+
+  Expected: A token + user object
+Why: Proves bcrypt password checking and JWT generation work.
+
+5. View all rides as admin
+curl http://localhost:3000/api/rides \
+  -H "Authorization: Bearer ADMIN_TOKEN"
+
+  Expected: All 5 rides including customer names, rider names, dispatcher emails
+Why: Admin sees everything. Also proves the JWT middleware is reading the token correctly.
+
+6. Log in as dispatcher
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dispatcher1@jetlink.com","password":"password123"}'
+Save this token separately as DISPATCHER_TOKEN.
+
+
+7. View rides as dispatcher
+curl http://localhost:3000/api/rides \
+  -H "Authorization: Bearer DISPATCHER_TOKEN"
+  Expected: Only rides belonging to dispatcher1 + unclaimed new rides
+Why: Proves authorization works — dispatchers can't see other dispatchers' rides.
+
+8. Dispatcher tries to create a rider
+curl -X POST http://localhost:3000/api/riders \
+  -H "Authorization: Bearer DISPATCHER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test Rider","phone":"+254700000099"}'
+
+  Expected: {"error":"Access denied"}
+Why: Only admins can create riders. Role enforcement is working.
+
+9. Claim a ride as admin
+curl -X POST http://localhost:3000/api/rides/1/claim \
+  -H "Authorization: Bearer ADMIN_TOKEN"
+
+  Expected: Ride status changes to assigned, a rider_id is filled in automatically
+Why: Proves the claim flow, transaction, and auto-assignment all work together.
+
+10. Try an invalid state transition
+curl -X PATCH http://localhost:3000/api/rides/1/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"completed"}'
+
+  Expected: {"error":"Cannot move from assigned to completed"}
+Why: The state machine rejects invalid transitions. A ride must go assigned → in_progress → completed, not skip steps.
+
+11. Move ride through valid transitions
+
+# First move to in_progress
+curl -X PATCH http://localhost:3000/api/rides/1/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"in_progress"}'
+
+# Then complete it
+curl -X PATCH http://localhost:3000/api/rides/1/status \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"completed"}'
+
+  Expected: Both succeed, status updates correctly each time
+Why: Proves the full ride lifecycle works end to end.
+
+12. Confirm no SQL outside repositories
+grep -r "SELECT " --include="*.js" --exclude-dir=node_modules ./routes ./controllers ./services
+
+Expected: No output
+Why: Proves clean layered architecture. SQL only lives in repositories.
+
+13. Check rides in the database directly
+psql postgresql://boda_user:boda1234@localhost:5432/boda_dispatch -c "SELECT id, status, rider_id, dispatcher_id FROM rides;"
+
+Why: Shows the data is actually in PostgreSQL, not SQLite. Confirms the migration worked.
