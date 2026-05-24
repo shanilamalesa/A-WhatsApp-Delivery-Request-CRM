@@ -10,7 +10,7 @@ const META_APP_SECRET = process.env.META_APP_SECRET;
 const META_VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
 
 
-//webhook with meta when regestering
+//webhook with meta when regestering (verification)
 router.get("/", (req, res) =>{
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
@@ -24,7 +24,7 @@ router.get("/", (req, res) =>{
 });
 
 
-// receives messages, verifies signature, extracts phone and text, calls bot
+// receives messages from customer, verifies signature, extracts phone and text, calls bot
 router.post("/", async (req, res) =>{
     console.log("Message received!", JSON.stringify(req.body));
     if (!verifySignature(req)) {
@@ -44,7 +44,7 @@ router.post("/", async (req, res) =>{
         if(!message || message.length === 0) return;
 
         for (const msg of message){
-            const from = msg.from //customers pfone number
+            const from = msg.from //customers phone number
             const text = msg.text?.body // actual message text
             if (text) {
                 await handleMessage(from, text)
@@ -56,7 +56,7 @@ router.post("/", async (req, res) =>{
 
 });
 
-
+//verifySignature check if really if Request comes from meta
 //verify webhook with meta when regestering
 function verifySignature(req) {
   const signature = req.headers['x-hub-signature-256']

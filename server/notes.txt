@@ -18,3 +18,38 @@ server/
   routes/
     webhook.js      ✅ — receives WhatsApp messages
     api.js          ✅ — serves the dashboard
+
+
+##bot.js
+
+customers — find or create customer by phone ✅
+deliveries — create delivery when customer confirms ✅
+messages — log every inbound and outbound message ✅
+sendMessage — send replies to customer via Meta API ✅
+getConversation, upsertConversation — read and update conversation state
+
+## generating hash password
+node -e "const b = require('bcrypt'); b.hash('password123', 12).then(h => console.log(h))"
+
+HOW A TRANSACTION WORKS(claim)
+
+Without a transaction:
+
+Sarah: finds Peter (2 active rides) ← best rider
+John:  finds Peter (2 active rides) ← same rider!
+Sarah: assigns Peter to Ride #7
+John:  assigns Peter to Ride #7
+Result: Peter gets two rides at once 
+
+With a transaction + FOR UPDATE:
+
+Sarah: BEGIN
+Sarah: finds Peter, LOCKS his row
+John:  BEGIN
+John:  tries to find a rider... WAITING (Peter's row is locked)
+Sarah: assigns Peter to Ride #7
+Sarah: COMMIT ← lock released
+John:  now gets Peter... but Peter is now 'assigned'
+John:  finds James instead (next best rider)
+John:  assigns James to Ride #7
+Result: two different riders, no double booking ✓

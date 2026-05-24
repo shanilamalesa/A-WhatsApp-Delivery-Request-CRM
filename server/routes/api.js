@@ -1,76 +1,75 @@
 const express = require("express");
-const deliveries = require("../db/deliveries");
-const messages = require("../db/messages");
-const { updateDeliveryStatus } = require("../services/delivery");
+const rideRepo = require("../repositories/ride.repo");
+const { authenticate } = require("../middleware/auth.middleware");
 const router = express.Router();
 
-router.get('/deliveries', (req, res) => {
-    const page = Number(req.query.page) || 1
-    const pageSize = Number(req.query.pageSize) || 20
-    const status = req.query.status
-    const search = req.query.search
+// Protect all routes
+router.use(authenticate);
 
-    const result = deliveries.getAllDeliveries({ page, pageSize, status, search })
+// Dashboard loads the table (maps deliveries -> rides for frontend compatibility)
+router.get('/deliveries', async (req, res) => {
+  try {
+    const rides = await rideRepo.getAllRides();
+    res.json({
+      total: rides.length,
+      page: 1,
+      pageSize: 20,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    res.json(result)
-})
-
-
-router.get('/deliveries/:id', (req, res) => {
+// Operator clicks a delivery row
+router.get('/deliveries/:id', async (req, res) => {
+  try {
     const id = Number(req.params.id);
-    const delivery = deliveries.findById(id);
+    const ride = await rideRepo.getRideById(id);
+    if (!ride) {
+      return res.status(404).json({ error: 'Delivery not found' });
+    }
+    res.json(ride);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    if (!delivery) {
-        return res.status(404).json({ error: 'Delivery not found' })
+// Operator updates a delivery
+router.patch('/deliveries/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body;
+
+    const ride = await rideRepo.getRideById(id);
+    if (!ride) {
+      return res.status(404).json({ error: 'Delivery not found' });
     }
 
-    const conversation = messages.getMessagesByCustomer(delivery.customer_id)
-    res.json({ ...delivery, conversation })
-})
-
-router.patch('/deliveries/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const fields = req.body
-  
-  const delivery = deliveries.findById(id)
-  if (!delivery) {
-    return res.status(404).json({ error: 'Delivery not found' })
-  }
-
-  try {
-    const updated = updateDeliveryStatus(id, fields)
-    res.json(updated)
+    const updated = await rideRepo.updateRideStatus(id, status);
+    res.json(updated);
   } catch (err) {
-    return res.status(400).json({ error: err.message })
+    res.status(400).json({ error: err.message });
   }
-})
+});
 
+// Dashboard stats cards
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await rideRepo.getRideStats();
 
-router.get('/stats', (req, res) => {
-  const db = require('../db/index')
-  
-  const total = db.prepare('SELECT COUNT(*) as count FROM deliveries').get().count
-  
-  const today = db.prepare(`
-    SELECT COUNT(*) as count FROM deliveries 
-    WHERE date(created_at) = date('now')
-  `).get().count
+    const statusMap = {
+      new: 0, assigned: 0, in_progress: 0, completed: 0, cancelled: 0
+    };
+    stats.byStatus.forEach(row => { statusMap[row.status] = Number(row.count) });
 
-  const byStatus = db.prepare(`
-    SELECT status, COUNT(*) as count FROM deliveries GROUP BY status
-  `).all()
-
-  const statusMap = {
-    pending: 0, assigned: 0, picked_up: 0, delivered: 0, cancelled: 0
+    res.json({
+      total: stats.total,
+      today: stats.today,
+      byStatus: statusMap
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  byStatus.forEach(row => { statusMap[row.status] = row.count })
+});
 
-  res.json({
-    total,
-    today,
-    byStatus: statusMap,
-    pending: statusMap.pending
-  })
-})
-
-module.exports = router
+module.exports = router;

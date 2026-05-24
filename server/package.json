@@ -4,20 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
-
-  },
+  "start": "node index.js",
+  "dev": "nodemon index.js",
+  "db:schema": "psql postgresql://boda_user:boda1234@localhost:5432/boda_dispatch -f db/schema.sql",
+  "db:seed": "psql postgresql://boda_user:boda1234@localhost:5432/boda_dispatch -f db/seed.sql",
+  "db:reset": "npm run db:schema && npm run db:seed"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.16.0",
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.9.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
