@@ -24,8 +24,15 @@ function App() {
 
   function fetchStats() {
     fetch('http://localhost:3000/api/stats')
-      .then(res => res.json())
-      .then(data => setStats(data));
+      .then(res => res.json().then(data => {
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        return data;
+      }))
+      .then(data => setStats(data))
+      .catch(err => {
+        console.error('Failed to load stats:', err.message);
+        setStats(null);
+      });
   }
 
   useEffect(() => {
