@@ -1,29 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api';
 
 function DetailPanel({ delivery, onClose, onUpdate }) {
   const [conversation, setConversation] = useState([]);
   const [rider, setRider] = useState(delivery.assigned_rider || '');
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/deliveries/${delivery.id}`)
-      .then(res => res.json())
-      .then(data => setConversation(data.conversation || []));
+    apiFetch(`/api/deliveries/${delivery.id}`)
+      .then(data => setConversation(data.conversation || []))
+      .catch(err => console.error('Failed to load delivery:', err.message));
   }, [delivery.id]);
 
   function updateStatus(newStatus) {
-    fetch(`http://localhost:3000/api/deliveries/${delivery.id}`, {
+    apiFetch(`/api/deliveries/${delivery.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
-    }).then(() => onUpdate());
+    })
+      .then(() => onUpdate())
+      .catch(err => alert(err.message));
   }
 
   function assignRider() {
-    fetch(`http://localhost:3000/api/deliveries/${delivery.id}`, {
+    apiFetch(`/api/deliveries/${delivery.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assigned_rider: rider })
-    }).then(() => onUpdate());
+    })
+      .then(() => onUpdate())
+      .catch(err => alert(err.message));
   }
 
   return (
