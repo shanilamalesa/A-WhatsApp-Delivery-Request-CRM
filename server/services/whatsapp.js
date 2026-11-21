@@ -12,18 +12,27 @@ const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 //async — marks a function as one that contains waiting operations
 //await — wait here until this specific operation finishes
 async function sendMessage (to, body){
-    await axios.post(
-         `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-         {
-            messaging_product: "whatsapp",
-            to: to,
-            type: "text",
-            text: { body: body}
-         },
-         {
-            headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`}
-         }
-    )
+    try {
+        await axios.post(
+             `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+             {
+                messaging_product: "whatsapp",
+                to: to,
+                type: "text",
+                text: { body: body}
+             },
+             {
+                headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`}
+             }
+        )
+    } catch (err) {
+        // Surface Meta's real reason (expired token, recipient not allowed, etc.)
+        const metaError = err.response?.data?.error;
+        if (metaError) {
+            throw new Error(`WhatsApp send to ${to} failed (${metaError.code}): ${metaError.message}`);
+        }
+        throw err;
+    }
 }
 
 module.exports = sendMessage

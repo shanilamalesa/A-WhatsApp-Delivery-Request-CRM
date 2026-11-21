@@ -1,5 +1,6 @@
 const express = require("express");
 const rideRepo = require("../repositories/ride.repo");
+const messageRepo = require("../repositories/message.repo");
 const { authenticate } = require("../middleware/auth.middleware");
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.get('/deliveries', async (req, res) => {
   try {
     const rides = await rideRepo.getAllRides();
     res.json({
+      deliveries: rides,
       total: rides.length,
       page: 1,
       pageSize: 20,
@@ -28,7 +30,11 @@ router.get('/deliveries/:id', async (req, res) => {
     if (!ride) {
       return res.status(404).json({ error: 'Delivery not found' });
     }
-    res.json(ride);
+    // Attach the customer's WhatsApp chat history for the detail panel
+    const conversation = ride.customer_id
+      ? await messageRepo.getMessagesByCustomer(ride.customer_id)
+      : [];
+    res.json({ ...ride, conversation });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

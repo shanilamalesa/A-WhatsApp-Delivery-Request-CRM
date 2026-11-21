@@ -31,3 +31,24 @@ INSERT INTO rides (customer_id, rider_id, dispatcher_id, pickup_location, dropof
 
 INSERT INTO rides (customer_id, rider_id, dispatcher_id, pickup_location, dropoff_location, status, assigned_at) VALUES
 (2, 1, 2, 'Junction Mall', 'Lavington', 'completed', NOW() - INTERVAL '2 hours');
+
+-- Sample WhatsApp chat history (shown in the dashboard detail panel)
+INSERT INTO messages (customer_id, direction, content, created_at) VALUES
+(1, 'inbound',  'Hi', NOW() - INTERVAL '30 minutes'),
+(1, 'outbound', 'Hello! Welcome to Boda Dispatch 🛵 Where should we pick up your package from?', NOW() - INTERVAL '30 minutes'),
+(1, 'inbound',  'Yaya Centre', NOW() - INTERVAL '29 minutes'),
+(1, 'outbound', 'Got it! Where should we deliver to?', NOW() - INTERVAL '29 minutes'),
+(1, 'inbound',  'Valley Arcade', NOW() - INTERVAL '28 minutes'),
+(1, 'outbound', 'Request received! Your ride #1 has been created. A dispatcher will assign a rider shortly.', NOW() - INTERVAL '27 minutes'),
+(2, 'inbound',  'Hello', NOW() - INTERVAL '20 minutes'),
+(2, 'outbound', 'Hello! Welcome to Boda Dispatch 🛵 Where should we pick up your package from?', NOW() - INTERVAL '20 minutes'),
+(2, 'inbound',  'Westgate Mall', NOW() - INTERVAL '19 minutes'),
+(2, 'outbound', 'Got it! Where should we deliver to?', NOW() - INTERVAL '19 minutes'),
+(2, 'inbound',  'Kilimani', NOW() - INTERVAL '18 minutes'),
+(2, 'outbound', 'Request received! Your ride #2 has been created. A dispatcher will assign a rider shortly.', NOW() - INTERVAL '17 minutes'),
+(3, 'inbound',  'Hi, I need a delivery', NOW() - INTERVAL '50 minutes'),
+(3, 'outbound', 'Hello! Welcome to Boda Dispatch 🛵 Where should we pick up your package from?', NOW() - INTERVAL '50 minutes'),
+(3, 'inbound',  'Karen Hub', NOW() - INTERVAL '49 minutes'),
+(3, 'outbound', 'Got it! Where should we deliver to?', NOW() - INTERVAL '49 minutes'),
+(3, 'inbound',  'Ngong Road', NOW() - INTERVAL '48 minutes'),
+(3, 'outbound', 'Request received! Your ride #3 has been created. A dispatcher will assign a rider shortly.', NOW() - INTERVAL '47 minutes');

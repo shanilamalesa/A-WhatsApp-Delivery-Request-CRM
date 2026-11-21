@@ -56,48 +56,54 @@ async function handleMessage(from, text) {
 
   await messageRepo.logMessage(customer.id, 'inbound', text);
 
+  // Send a WhatsApp reply AND save it, so the dashboard shows both sides of the chat
+  const reply = async (body) => {
+    await sendMessage(from, body);
+    await messageRepo.logMessage(customer.id, 'outbound', body);
+  };
+
   const conversation = await conversationRepo.getConversation(customer.id);
   const state = conversation ? conversation.state : STATES.START;
   const data = conversation ? JSON.parse(conversation.data) : {};
 
   if (state === STATES.START || state === STATES.COMPLETE) {
-    await sendMessage(from, "Hello! Welcome to Boda Dispatch 🛵 Where should we pick up your package from?");
+    await reply("Hello! Welcome to Boda Dispatch 🛵 Where should we pick up your package from?");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_PICKUP, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_PICKUP) {
     data.pickup_location = text;
-    await sendMessage(from, "Got it! Where should we deliver to?");
+    await reply("Got it! Where should we deliver to?");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_DROPOFF, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_DROPOFF) {
     data.dropoff_location = text;
-    await sendMessage(from, "What is the recipient's name?");
+    await reply("What is the recipient's name?");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_RECIPIENT_NAME, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_RECIPIENT_NAME) {
     data.recipient_name = text;
-    await sendMessage(from, "What is the recipient's phone number?");
+    await reply("What is the recipient's phone number?");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_RECIPIENT_PHONE, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_RECIPIENT_PHONE) {
     data.recipient_phone = text;
-    await sendMessage(from, "Please describe the package briefly (e.g. Food order, medium bag)");
+    await reply("Please describe the package briefly (e.g. Food order, medium bag)");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_PACKAGE, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_PACKAGE) {
     data.package_description = text;
-    await sendMessage(from, "How urgent is this delivery? Reply with:\n1. Standard (under 2 hours)\n2. Express (under 45 minutes)\n3. Scheduled (time agreed later)");
+    await reply("How urgent is this delivery? Reply with:\n1. Standard (under 2 hours)\n2. Express (under 45 minutes)\n3. Scheduled (time agreed later)");
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_URGENCY, JSON.stringify(data));
   }
 
   else if (state === STATES.WAITING_FOR_URGENCY) {
     data.urgency = text;
-    await sendMessage(from, `Please confirm your delivery:\n\n📍 Pickup: ${data.pickup_location}\n📍 Dropoff: ${data.dropoff_location}\n👤 Recipient: ${data.recipient_name}\n📞 Phone: ${data.recipient_phone}\n📦 Package: ${data.package_description}\n⚡ Urgency: ${data.urgency}\n\nReply *yes* to confirm or *restart* to start over`);
+    await reply(`Please confirm your delivery:\n\n📍 Pickup: ${data.pickup_location}\n📍 Dropoff: ${data.dropoff_location}\n👤 Recipient: ${data.recipient_name}\n📞 Phone: ${data.recipient_phone}\n📦 Package: ${data.package_description}\n⚡ Urgency: ${data.urgency}\n\nReply *yes* to confirm or *restart* to start over`);
     await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_CONFIRMATION, JSON.stringify(data));
   }
 
@@ -109,13 +115,13 @@ async function handleMessage(from, text) {
           pickup_location: data.pickup_location,
           dropoff_location: data.dropoff_location
         });
-        await sendMessage(from, `Request received! Your ride #${ride.id} has been created. A dispatcher will assign a rider shortly.`);
+        await reply(`Request received! Your ride #${ride.id} has been created. A dispatcher will assign a rider shortly.`);
         await conversationRepo.upsertConversation(customer.id, STATES.COMPLETE, JSON.stringify({}));
       } catch (err) {
         console.error('Error creating ride:', err);
       }
     } else if (text.toLowerCase() === 'restart') {
-      await sendMessage(from, 'Starting over! Where should we pick up your package from?');
+      await reply('Starting over! Where should we pick up your package from?');
       await conversationRepo.upsertConversation(customer.id, STATES.WAITING_FOR_PICKUP, JSON.stringify({}));
     }
   }
